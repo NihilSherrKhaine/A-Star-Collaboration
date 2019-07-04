@@ -176,13 +176,13 @@ tf.app.flags.DEFINE_float(
 #######################
 
 tf.app.flags.DEFINE_string(
-    'dataset_name', 'cifar10', 'The name of the dataset to load.')
+    'dataset_name', 'googleSpeech', 'The name of the dataset to load.')
 
 tf.app.flags.DEFINE_string(
     'dataset_split_name', 'train', 'The name of the train/test split.')
 
 tf.app.flags.DEFINE_string(
-    'dataset_dir', '/raid/lile/dataset/cifar10', 'The directory where the dataset files are stored.')
+    'dataset_dir', '/raid/lile/dataset/GSC', 'The directory where the dataset files are stored.')
 
 tf.app.flags.DEFINE_integer(
     'labels_offset', 0,
