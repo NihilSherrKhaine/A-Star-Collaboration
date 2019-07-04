@@ -23,8 +23,66 @@ import tarfile
 
 from six.moves import urllib
 import tensorflow as tf
+from tensorflow.contrib.framework.python.ops import audio_ops
 
 LABELS_FILENAME = 'labels.txt'
+
+def get_spectrograms(dataset_dir):
+  for subdir, dirs, filenames in os.walk(dataset_dir):
+    for filename in [f for f in filenames if f.endswith(".wav")]:
+      path = os.path.join(subdir, filename)
+      wav_to_spectrogram(path)
+  return
+
+def wav_to_spectrogram(path):
+  wav_file = tf.placeholder(tf.string)
+  audio_binary = tf.read_file(wav_file)
+
+  # Decode the wav mono into a 2D tensor with time in dimension 0
+  # and channel along dimension 1
+  waveform = audio_ops.decode_wav(audio_binary, file_format='wav', desired_channels=1)
+
+  # Compute the spectrogram
+  spectrogram = audio_ops.audio_spectrogram(
+    waveform.audio,
+    window_size=1024,
+    stride=64)
+
+  # Custom brightness
+  brightness = tf.placeholder(tf.float32, shape=[])
+  mul = tf.multiply(spectrogram, brightness)
+
+  # Normalize pixels
+  min_const = tf.constant(255.)
+  minimum = tf.minimum(mul, min_const)
+
+  # Expand dims so we get the proper shape
+  expand_dims = tf.expand_dims(minimum, -1)
+
+  # Remove the trailing dimension
+  squeeze = tf.squeeze(expand_dims, 0)
+
+  # Tensorflow spectrogram has time along y axis and frequencies along x axis
+  flip = tf.image.flip_left_right(squeeze)
+  transpose = tf.image.transpose_image(flip)
+
+  # Convert image to 3 channels
+  grayscale = tf.image.grayscale_to_rgb(transpose)
+
+  # Cast to uint8 and encode as png
+  cast = tf.cast(grayscale, tf.uint8)
+  png = tf.image.encode_png(cast)
+
+  with tf.Session() as sess:
+    # Run the computation graph and save the png encoded image to a file
+    image = sess.run(png, feed_dict={
+      wav_file: path, brightness: 100})
+
+    new_path = path.rstrip(".wav")
+    with open(new_path + '.png', 'wb') as f:
+      f.write(image)
+
+  return
 
 
 def int64_feature(values):
